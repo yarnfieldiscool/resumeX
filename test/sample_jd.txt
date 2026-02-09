@@ -1,0 +1,15 @@
+Python Senior Backend Engineer - Beijing
+
+Requirements:
+- 3+ years of Python development experience
+- Proficient in Docker/K8s
+- Experience with MySQL and Redis
+- Bachelor degree or above
+- Good communication and teamwork skills
+
+Nice to Have:
+- Experience with Java or Go
+- AWS certification
+
+Salary Range: 25K-40K/month
+Location: Beijing

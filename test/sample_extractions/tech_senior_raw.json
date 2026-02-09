@@ -1,0 +1,200 @@
+[
+  {
+    "id": "ext_001",
+    "type": "candidate",
+    "text": "张三\n男 | 28岁 | 北京\n手机: 138-0000-0000 | 邮箱: zhangsan@email.com",
+    "summary_cn": "候选人张三，男，28岁，现居北京",
+    "attributes": {
+      "name": "张三",
+      "gender": "男",
+      "age": 28,
+      "phone": "138-0000-0000",
+      "email": "zhangsan@email.com",
+      "city": "北京",
+      "education_level": "本科"
+    },
+    "source_file": "tech_senior.md"
+  },
+  {
+    "id": "ext_002",
+    "type": "experience",
+    "text": "2020.07 - 至今  ABC科技有限公司  高级后端工程师",
+    "summary_cn": "ABC科技高级后端工程师 2020至今",
+    "attributes": {
+      "company": "ABC科技有限公司",
+      "title": "高级后端工程师",
+      "start_date": "2020-07",
+      "end_date": "至今",
+      "duration_months": 42,
+      "description": "核心交易系统架构设计，微服务改造，Redis缓存优化",
+      "projects": [
+        {
+          "name": "智能风控平台",
+          "role": "技术负责人",
+          "period": "2022.03-2022.12",
+          "description": "基于机器学习的实时风控系统，日处理交易500万笔"
+        }
+      ]
+    },
+    "source_file": "tech_senior.md"
+  },
+  {
+    "id": "ext_003",
+    "type": "experience",
+    "text": "2018.07 - 2020.06  XYZ互联网公司  后端开发工程师",
+    "summary_cn": "XYZ互联网后端开发 2018-2020",
+    "attributes": {
+      "company": "XYZ互联网公司",
+      "title": "后端开发工程师",
+      "start_date": "2018-07",
+      "end_date": "2020-06",
+      "duration_months": 24,
+      "description": "用户中心模块开发，RabbitMQ消息队列，数据库优化"
+    },
+    "source_file": "tech_senior.md"
+  },
+  {
+    "id": "ext_004",
+    "type": "education",
+    "text": "2014.09 - 2018.06  北京大学  计算机科学与技术  本科  GPA: 3.8/4.0",
+    "summary_cn": "北京大学计算机本科",
+    "attributes": {
+      "school": "北京大学",
+      "major": "计算机科学与技术",
+      "degree": "本科",
+      "start_date": "2014-09",
+      "end_date": "2018-06",
+      "gpa": "3.8/4.0"
+    },
+    "source_file": "tech_senior.md"
+  },
+  {
+    "id": "ext_005",
+    "type": "skill",
+    "text": "Python (精通, 8年)",
+    "summary_cn": "Python精通8年",
+    "attributes": {
+      "name": "Python",
+      "category": "语言",
+      "level": "精通",
+      "years": 8
+    },
+    "source_file": "tech_senior.md"
+  },
+  {
+    "id": "ext_006",
+    "type": "skill",
+    "text": "Java (熟练, 5年)",
+    "summary_cn": "Java熟练5年",
+    "attributes": {
+      "name": "Java",
+      "category": "语言",
+      "level": "熟练",
+      "years": 5
+    },
+    "source_file": "tech_senior.md"
+  },
+  {
+    "id": "ext_007",
+    "type": "skill",
+    "text": "Docker/K8s (熟练, 3年)",
+    "summary_cn": "Docker/K8s熟练3年",
+    "attributes": {
+      "name": "Docker/K8s",
+      "category": "工具",
+      "level": "熟练",
+      "years": 3
+    },
+    "source_file": "tech_senior.md"
+  },
+  {
+    "id": "ext_008",
+    "type": "skill",
+    "text": "MySQL (熟练, 6年)",
+    "summary_cn": "MySQL熟练6年",
+    "attributes": {
+      "name": "MySQL",
+      "category": "数据库",
+      "level": "熟练",
+      "years": 6
+    },
+    "source_file": "tech_senior.md"
+  },
+  {
+    "id": "ext_009",
+    "type": "skill",
+    "text": "Redis (熟练, 4年)",
+    "summary_cn": "Redis熟练4年",
+    "attributes": {
+      "name": "Redis",
+      "category": "数据库",
+      "level": "熟练",
+      "years": 4
+    },
+    "source_file": "tech_senior.md"
+  },
+  {
+    "id": "ext_010",
+    "type": "skill",
+    "text": "RabbitMQ (了解, 2年)",
+    "summary_cn": "RabbitMQ了解2年",
+    "attributes": {
+      "name": "RabbitMQ",
+      "category": "工具",
+      "level": "了解",
+      "years": 2
+    },
+    "source_file": "tech_senior.md"
+  },
+  {
+    "id": "ext_011",
+    "type": "certification",
+    "text": "AWS Solutions Architect Professional (亚马逊, 2023.06, 有效期至2026.06)",
+    "summary_cn": "AWS架构师认证",
+    "attributes": {
+      "name": "AWS Solutions Architect Professional",
+      "issuer": "亚马逊",
+      "date": "2023-06",
+      "expiry": "2026-06"
+    },
+    "source_file": "tech_senior.md"
+  },
+  {
+    "id": "ext_012",
+    "type": "certification",
+    "text": "PMP 项目管理专业人士 (PMI, 2022.01)",
+    "summary_cn": "PMP认证",
+    "attributes": {
+      "name": "PMP 项目管理专业人士",
+      "issuer": "PMI",
+      "date": "2022-01"
+    },
+    "source_file": "tech_senior.md"
+  },
+  {
+    "id": "ext_013",
+    "type": "job_intention",
+    "text": "求职意向: Python 高级开发工程师 | 期望薪资: 25K-35K | 到岗时间: 一个月内",
+    "summary_cn": "求职Python高级开发，25-35K",
+    "attributes": {
+      "position": "Python 高级开发工程师",
+      "industry": "互联网/金融科技",
+      "city": "北京/上海",
+      "salary_min": 25000,
+      "salary_max": 35000,
+      "entry_date": "一个月内"
+    },
+    "source_file": "tech_senior.md"
+  },
+  {
+    "id": "ext_014",
+    "type": "self_evaluation",
+    "text": "8年后端开发经验，擅长高并发系统设计，有良好的团队协作能力和沟通能力。热爱技术，保持持续学习的习惯，关注前沿技术动态。",
+    "summary_cn": "自我评价: 高并发/团队协作/持续学习",
+    "attributes": {
+      "text": "8年后端开发经验，擅长高并发系统设计，有良好的团队协作能力和沟通能力。热爱技术，保持持续学习的习惯，关注前沿技术动态。",
+      "traits": ["高并发系统设计", "团队协作", "沟通能力", "持续学习"]
+    },
+    "source_file": "tech_senior.md"
+  }
+]

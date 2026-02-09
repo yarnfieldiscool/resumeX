@@ -1,0 +1,31 @@
+{
+  "name": "resume",
+  "description": "简历结构化提取 - 从中文/英文简历中提取候选人信息、工作经历、教育背景、技能、自我评价、求职意向和资质证书",
+  "focus_types": [
+    "candidate",
+    "experience",
+    "education",
+    "skill",
+    "self_evaluation",
+    "job_intention",
+    "certification"
+  ],
+  "pipeline_config": {
+    "source_grounding": true,
+    "overlap_dedup": true,
+    "confidence_scoring": true,
+    "entity_resolution": true,
+    "relation_inference": true,
+    "kg_injection": false
+  },
+  "few_shot_key": "resume",
+  "extraction_hints": {
+    "candidate": "提取简历头部的个人基本信息：姓名、性别、年龄/出生日期、手机号、邮箱、所在城市、学历。姓名通常在最顶部。注意区分中英文简历格式差异。",
+    "experience": "提取每段工作经历：公司名、职位、起止时间、工作描述。如有嵌套项目经历，提取到 projects 数组中。注意'至今'表示仍在职。多段经历分别提取为独立记录。",
+    "education": "提取学校、专业、学位、起止时间、GPA、荣誉奖项。学位统一为：博士/硕士/本科/大专/高中。多段教育经历分别提取。",
+    "skill": "每个技能单独提取为一条记录。识别熟练度(精通/熟练/掌握/了解)和使用年限。注意从工作经历描述中也可能发现技能关键词。Docker/K8s 视为一个技能项。",
+    "self_evaluation": "提取自我评价/个人简介的完整原文到 text 字段，同时从中提炼关键特质标签到 traits 数组。traits 应为简短关键词，如'团队协作'而非完整句子。",
+    "job_intention": "提取期望职位、行业、城市、薪资范围、到岗时间。薪资转为数值(K=千)。'面议'时 salary_min 和 salary_max 均不填，仅标注 salary_unit 为'面议'。",
+    "certification": "提取证书名称、颁发机构、获得日期、有效期。常见证书：PMP、CPA、CFA、AWS认证、Azure认证、软考、教师资格证等。从原文推断 issuer（如 PMP 对应 PMI）。"
+  }
+}
