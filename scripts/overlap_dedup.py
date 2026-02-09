@@ -65,6 +65,11 @@ class OverlapDeduplicator:
                 if self.type_aware and item.get('type') != kept_item.get('type'):
                     continue
 
+                # same-text-different-entity 例外 (v1.2):
+                # 共享文本块但 attributes.name 不同 → 视为不同实体，跳过去重
+                if self._is_distinct_entity(item, kept_item):
+                    continue
+
                 overlap = self._overlap_ratio(item, kept_item)
 
                 if overlap > self.overlap_threshold:
@@ -84,6 +89,25 @@ class OverlapDeduplicator:
 
         # 合并无效位置的项
         return kept + invalid
+
+    def _is_distinct_entity(self, a: dict, b: dict) -> bool:
+        """
+        判断两个提取项是否为不同实体，应跳过去重 (v1.2)
+
+        判定规则:
+        1. 不同 type → 一定是不同实体 (candidate vs education 等)
+        2. 同 type + 不同 attributes.name → 不同实体 (H3CNE vs H3CSE 等)
+
+        Returns:
+            True 表示是不同实体，应跳过去重
+        """
+        # 规则1: 不同类型永远视为不同实体
+        if a.get('type') != b.get('type'):
+            return True
+        # 规则2: 同类型但不同名称
+        name_a = a.get('attributes', {}).get('name', '')
+        name_b = b.get('attributes', {}).get('name', '')
+        return bool(name_a) and bool(name_b) and name_a != name_b
 
     def _overlap_ratio(self, a: dict, b: dict) -> float:
         """

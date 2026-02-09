@@ -1,20 +1,20 @@
 ---
-description: "HR resume structured extraction expert. Use when: extracting candidate info, work experience, education, skills, self-evaluation, job intention, certifications from resumes (PDF/DOCX/TXT). Provides: (1) 7 HR extraction types (2) Chinese resume Few-shot templates (3) 6-step post-processing pipeline (4) PDF/DOCX parsers (5) SQLite talent database + import/query/match CLI (6) JD-candidate matching (5-dimension weighted scoring). Only requires PyMuPDF + python-docx, no external API."
+description: "HR resume structured extraction expert. Use when: extracting candidate info, work experience, education, skills, self-evaluation, job intention, certifications from resumes (PDF/DOCX/TXT). Provides: (1) 7 HR extraction types with 8 skill categories (2) Chinese resume Few-shot templates incl. implicit skill extraction (3) 7-step post-processing pipeline with smart dedup (4) PDF/DOCX parsers with noise cleaning (5) SQLite talent database + import/query/match CLI (6) JD-candidate matching (5-dimension weighted scoring). Only requires PyMuPDF + python-docx, no external API."
 globs: []
 alwaysApply: false
 ---
 
 # resumeX - Resume Structured Extractor
 
-> AI-powered resume extraction | 7 HR types | PDF/DOCX parsing | 6-step pipeline | SQLite talent DB | JD matching
+> AI-powered resume extraction | 7 HR types | 8 skill categories | PDF/DOCX parsing | 7-step pipeline | SQLite talent DB | JD matching
 
 ## Skill Root (IMPORTANT)
 
 This skill is installed at: **`.cursor/skills/resumex/`**
 
 When referencing any file below, prefix with this path. For example:
-- `references/few-shot-templates.md` → `.cursor/skills/resumex/references/few-shot-templates.md`
-- `scripts/pipeline.py` → `.cursor/skills/resumex/scripts/pipeline.py`
+- `references/few-shot-templates.md` -> `.cursor/skills/resumex/references/few-shot-templates.md`
+- `scripts/pipeline.py` -> `.cursor/skills/resumex/scripts/pipeline.py`
 
 | Resource | Path |
 |----------|------|
@@ -23,7 +23,7 @@ When referencing any file below, prefix with this path. For example:
 | Output schema | `.cursor/skills/resumex/references/output-schema.md` |
 | Pipeline docs | `.cursor/skills/resumex/references/post-processing.md` |
 | Pipeline script | `.cursor/skills/resumex/scripts/pipeline.py` |
-| Resume preset | `.cursor/skills/resumex/assets/presets/resume.json` |
+| Resume preset | `.cursor/skills/resumex/presets/hr_full.json` |
 
 ## Core Rules (CRITICAL)
 
@@ -31,6 +31,8 @@ When referencing any file below, prefix with this path. For example:
 2. **Never free-form output** - Strictly follow JSON schema in `references/output-schema.md`
 3. **Never skip post-processing** - Raw extractions MUST go through `scripts/pipeline.py`
 4. **Never output low quality** - Filter extractions with `confidence < 0.3`
+5. **Extract implicit skills** - Skills found in experience/project descriptions MUST also be extracted (v1.1)
+6. **Use 8 skill categories** - language, framework, tool, database, foreign_language, algorithm, domain, methodology (v1.1)
 
 ## 7 HR Extraction Types
 
@@ -39,7 +41,7 @@ When referencing any file below, prefix with this path. For example:
 | `candidate` | Name, gender, age, phone, email, city | 1 |
 | `experience` | Company, position, period, responsibilities, nested projects | 2-5 |
 | `education` | School, major, degree, GPA, honors | 1-3 |
-| `skill` | Skill name, category, proficiency level, years | 5-15 |
+| `skill` | Skill name, category (8 types), proficiency level, years | 5-20 |
 | `self_evaluation` | Self-evaluation text, trait tags | 0-1 |
 | `job_intention` | Desired position, salary, city, availability | 0-1 |
 | `certification` | Certificate name, issuer, date, validity | 0-5 |
@@ -73,10 +75,10 @@ I need to extract structured info from a resume?
     |   +-- .docx/.doc --> python parse.py --input resume.docx --output resume.md
     |   +-- .txt/.md   --> Use directly, no parsing needed
     |
-    +-- Step 1: Parse to plain text (parse.py)
-    +-- Step 2: Select preset (resume.json)
-    +-- Step 3: Claude extraction (7 HR types, follow Few-shot templates)
-    +-- Step 4: Run post-processing pipeline (pipeline.py)
+    +-- Step 1: Parse to plain text (parse.py) - includes noise cleaning
+    +-- Step 2: Select preset (hr_full.json)
+    +-- Step 3: Claude extraction (7 HR types, 8 skill categories, follow Few-shot templates)
+    +-- Step 4: Run post-processing pipeline (pipeline.py, 7 steps)
     +-- Step 5: Import to database (import_resume.py)
     +-- Step 6: Query / Match
         +-- Search:  python query.py search "Python Beijing"
@@ -100,9 +102,9 @@ python .cursor/skills/resumex/scripts/parse.py --input-dir ./resumes/ --output-d
 ### Step 2: Select preset
 
 ```
-Preset: .cursor/skills/resumex/assets/presets/resume.json
-  - Focus: All 7 HR types
-  - Pipeline: All 6 steps enabled (entity resolution + relation inference)
+Preset: .cursor/skills/resumex/presets/hr_full.json
+  - Focus: All 7 HR types, 8 skill categories
+  - Pipeline: All 7 steps enabled (time normalization + smart dedup + entity resolution + relation inference)
 ```
 
 ### Step 3: Claude extraction
@@ -114,13 +116,16 @@ For each item:
 - `summary_cn` is the human-readable summary
 - `attributes` varies by type (see `references/extraction-types.md`)
 - Each skill must be extracted as a separate record
+- **Extract implicit skills** from experience/project descriptions (v1.1)
+- **Use 8 skill categories**: language, framework, tool, database, foreign_language, algorithm, domain, methodology
+- **Time format**: normalize to YYYY.MM; year-only adds .01; keep "present"/"to date" as-is
 
 ### Step 4: Run pipeline
 
 ```bash
 python .cursor/skills/resumex/scripts/pipeline.py \
   --input raw.json --source resume.md \
-  --config .cursor/skills/resumex/assets/presets/resume.json \
+  --config .cursor/skills/resumex/presets/hr_full.json \
   --output result.json
 ```
 
@@ -139,15 +144,16 @@ python .cursor/skills/resumex/scripts/query.py detail 1
 python .cursor/skills/resumex/scripts/match.py --jd jd.txt --top 10
 ```
 
-## Pipeline Steps
+## Pipeline Steps (7-Step)
 
 ```
-1. Source Grounding  -> Locate text in resume (char_start/end + line)
-2. Overlap Dedup     -> Remove duplicate extractions (>50% overlap)
-3. Confidence Score  -> 4-dimension quality scoring
-4. Entity Resolution -> Merge same-name candidates (HR default: ON)
-5. Relation Inference -> Infer person-company-skill relations (HR default: ON)
-6. KG Injection      -> Knowledge graph format conversion (optional)
+1. Time Normalization   -> Standardize dates to YYYY.MM format (7 format variants)
+2. Source Grounding     -> Locate text in resume (char_start/end + line)
+3. Overlap Dedup        -> Smart dedup: different type or different name = distinct entity (v1.2)
+4. Confidence Score     -> 4-dimension quality scoring
+5. Entity Resolution    -> Merge same-name candidates (HR default: ON)
+6. Relation Inference   -> Infer person-company-skill relations (HR default: ON)
+7. KG Injection         -> Knowledge graph format conversion (optional)
 ```
 
 ## Key Principles
@@ -157,6 +163,9 @@ python .cursor/skills/resumex/scripts/match.py --jd jd.txt --top 10
 3. **text must be verbatim** - The `text` field is an exact resume substring, never rewritten
 4. **Skills extracted individually** - Each skill is a separate record, never combined
 5. **Unified time format** - period_start/period_end in YYYY.MM format
+6. **Implicit skill extraction** - Skills from experience/project descriptions, not just "Skills" section (v1.1)
+7. **8 skill categories** - algorithm/domain/methodology added in v1.1
+8. **Smart dedup** - Different entity type or name = never dedup, even with overlapping text (v1.2)
 
 ## Red Flags
 
@@ -169,3 +178,4 @@ python .cursor/skills/resumex/scripts/match.py --jd jd.txt --top 10
 | "Combine all skills into one record" | Each skill must be extracted separately |
 | "Keep salary as text" | salary_min/max must be numeric values (CNY) |
 | "Skip pipeline, import directly" | Must pipeline first then import |
+| "Only extract explicit skills" | Must also extract implicit skills from experience descriptions |

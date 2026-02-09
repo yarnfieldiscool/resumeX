@@ -14,6 +14,7 @@ Document Parse CLI
     python parse.py --input resume.pdf
 """
 
+import re
 import sys
 import argparse
 from pathlib import Path
@@ -34,6 +35,29 @@ PARSER_MAP = {
 }
 
 SUPPORTED_EXTENSIONS = set(PARSER_MAP.keys())
+
+# 追踪码/水印噪音模式 (BOSS直聘/猎聘等平台)
+# 匹配: 独占一行的长度>=20的 base64-like 字符串 (字母+数字+符号，无中文/空格)
+_TRACKING_NOISE_RE = re.compile(
+    r"^[A-Za-z0-9+/=_~\-]{20,}$"
+)
+
+
+def clean_tracking_noise(text: str) -> str:
+    """清理招聘平台 PDF 中的追踪码/水印噪音行。
+
+    BOSS直聘、猎聘等平台会在 PDF 中嵌入 base64-like 追踪码，
+    例如 "09cef8201b4dacea1n1B6i..." 这类独占一行的长字符串。
+
+    Args:
+        text: 解析后的 Markdown 文本
+
+    Returns:
+        清理后的文本
+    """
+    lines = text.split("\n")
+    cleaned = [line for line in lines if not _TRACKING_NOISE_RE.match(line.strip())]
+    return "\n".join(cleaned)
 
 
 def parse_file(input_path: str, output_path: Optional[str] = None) -> str:
@@ -64,6 +88,9 @@ def parse_file(input_path: str, output_path: Optional[str] = None) -> str:
     parser_cls = PARSER_MAP[ext]
     parser = parser_cls()
     markdown_text = parser.parse(str(path))
+
+    # 清理招聘平台追踪码/水印噪音
+    markdown_text = clean_tracking_noise(markdown_text)
 
     if output_path:
         out = Path(output_path)

@@ -34,12 +34,20 @@ From resume files to talent database, no external API keys required.
 | Feature | Description |
 |---------|-------------|
 | 7 Extraction Types | candidate, experience, education, skill, self_evaluation, job_intention, certification |
-| PDF/DOCX Parsing | PyMuPDF (single/dual-column auto-detection), python-docx (heading/bold/table preservation) |
-| 6-Step Pipeline | Source grounding / overlap dedup / confidence scoring / entity resolution / relation inference / KG conversion |
+| PDF/DOCX Parsing | PyMuPDF (single/dual-column auto-detection), python-docx (heading/bold/table preservation), tracking noise cleaning |
+| 7-Step Pipeline | Time normalization / source grounding / smart dedup / confidence scoring / entity resolution / relation inference / KG conversion |
+| 8 Skill Categories | language, framework, tool, database, foreign_language, **algorithm**, **domain**, **methodology** + implicit skill extraction from experience |
 | SQLite Talent DB | 8 normalized tables, multi-dimension search, group statistics |
 | JD Smart Matching | Auto-extract requirements from JD text, 5-dimension weighted scoring |
-| 6 CLI Tools | parse.py, pipeline.py, import_resume.py, query.py, match.py |
 | Zero External API | Only PyMuPDF + python-docx required |
+
+### What's New in v1.2
+
+| Version | Changes |
+|---------|---------|
+| **v1.2** | Smart dedup: `_is_distinct_entity` rule prevents false dedup of different entities sharing same text block (e.g., H3CNE/H3CSE/CISP from one line) |
+| **v1.1** | Skill categories 5 -> 8 (+algorithm/domain/methodology), implicit skill extraction from experience descriptions, time format normalization (7 formats), filename metadata parsing, PDF tracking noise cleaning |
+| v1.0 | Initial release: 7 HR types, 6-step pipeline, SQLite DB, JD matching |
 
 ### Architecture
 
@@ -49,12 +57,13 @@ Resume Files (PDF/DOCX/TXT)
     v
 +-------------------+     +----------------+     +-------------------+
 |  parse.py         | MD  |  Claude AI     | JSON|  pipeline.py      |
-|  Document Parser  +---->+  Structured    +---->+  6-Step Pipeline  |
-|  (PyMuPDF/docx)   |     |  Extraction    |     |  (Ground/Dedup/   |
-+-------------------+     |  (7 HR Types)  |     |   Score)          |
-                          +----------------+     +--------+----------+
-                                                          | JSON
-                                                          v
+|  Document Parser  +---->+  Structured    +---->+  7-Step Pipeline  |
+|  (PyMuPDF/docx)   |     |  Extraction    |     |  (Normalize/      |
+|  + noise cleaning |     |  (7 HR Types)  |     |   Ground/Dedup/   |
++-------------------+     +----------------+     |   Score)          |
+                                                  +--------+----------+
+                                                           | JSON
+                                                           v
 +-------------------+     +----------------+     +-------------------+
 |  match.py         | <-- |  query.py      | <-- |  import_resume.py |
 |  JD Matching      |     |  Search/Stats  |     |  Import to DB     |
@@ -109,7 +118,7 @@ python scripts/parse.py --input resume.pdf --output resume.md
 python scripts/pipeline.py \
   --input raw.json \
   --source resume.md \
-  --config assets/presets/resume.json \
+  --config presets/hr_full.json \
   --output result.json
 
 # Step 4: Import to database
@@ -123,15 +132,29 @@ python scripts/query.py list
 python scripts/match.py --jd jd.txt --top 10
 ```
 
+### Pipeline Steps (7-Step)
+
+```
+1. Time Normalization   -> Standardize dates to YYYY.MM format (7 format variants)
+2. Source Grounding     -> Locate text in resume (char_start/end + line)
+3. Overlap Dedup        -> Smart dedup: different type or different name = distinct entity
+4. Confidence Score     -> 4-dimension quality scoring
+5. Entity Resolution    -> Merge same-name candidates (HR default: ON)
+6. Relation Inference   -> Infer person-company-skill relations (HR default: ON)
+7. KG Injection         -> Knowledge graph format conversion (optional)
+```
+
 ### CLI Tools
 
 | Tool | Description | Usage |
 |------|-------------|-------|
 | `parse.py` | PDF/DOCX to Markdown | `python scripts/parse.py --input resume.pdf` |
-| `pipeline.py` | 6-step post-processing | `python scripts/pipeline.py --input raw.json --source resume.md` |
+| `pipeline.py` | 7-step post-processing | `python scripts/pipeline.py --input raw.json --source resume.md` |
 | `import_resume.py` | Import to SQLite | `python scripts/import_resume.py --input result.json` |
 | `query.py` | Search/stats/detail/list | `python scripts/query.py search "Python"` |
 | `match.py` | JD smart matching | `python scripts/match.py --jd jd.txt --top 10` |
+| `time_normalizer.py` | Standalone time format normalizer | Integrated in pipeline step 1 |
+| `filename_parser.py` | Resume filename metadata extractor | Parses `【position_city salary】name.pdf` |
 
 ### JD Matching Dimensions
 
@@ -171,12 +194,20 @@ python scripts/match.py --jd jd.txt --top 10
 | 特性 | 说明 |
 |------|------|
 | 7 种提取类型 | candidate, experience, education, skill, self_evaluation, job_intention, certification |
-| PDF/DOCX 解析 | PyMuPDF (单栏/双栏自动检测), python-docx (标题/粗体/表格保留) |
-| 6 步处理管道 | 源码定位 / 重叠去重 / 置信度评分 / 实体消歧 / 关系推断 / KG 转换 |
+| PDF/DOCX 解析 | PyMuPDF (单栏/双栏自动检测), python-docx (标题/粗体/表格保留), 追踪码噪音清理 |
+| 7 步处理管道 | 时间标准化 / 源码定位 / 智能去重 / 置信度评分 / 实体消歧 / 关系推断 / KG 转换 |
+| 8 种技能分类 | 语言, 框架, 工具, 数据库, 外语, **算法**, **领域**, **方法论** + 从工作经历隐式提取技能 |
 | SQLite 人才库 | 8 张规范化表, 多维度搜索, 分组统计 |
 | JD 智能匹配 | 从 JD 文本自动提取需求, 5 维加权评分排序 |
-| 6 个 CLI 工具 | parse.py, pipeline.py, import_resume.py, query.py, match.py |
 | 零外部 API | 仅需 PyMuPDF + python-docx |
+
+### v1.2 更新日志
+
+| 版本 | 变更 |
+|------|------|
+| **v1.2** | 智能去重: `_is_distinct_entity` 规则防止共享文本块的不同实体被误删 (如 H3CNE/H3CSE/CISP 同行提取) |
+| **v1.1** | 技能分类 5->8 (+算法/领域/方法论), 隐式技能提取, 时间格式标准化 (7种格式), 文件名元数据解析, PDF追踪码清理 |
+| v1.0 | 首版: 7种HR类型, 6步管道, SQLite数据库, JD匹配 |
 
 ### 架构
 
@@ -186,11 +217,12 @@ python scripts/match.py --jd jd.txt --top 10
     v
 +-------------------+     +----------------+     +-------------------+
 |  parse.py         | MD  |  Claude AI     | JSON|  pipeline.py      |
-|  文档解析          +---->+  结构化提取     +---->+  6步后处理管道     |
-|  (PyMuPDF/docx)   |     |  (7种HR类型)   |     |  (定位/去重/评分)  |
-+-------------------+     +----------------+     +--------+----------+
-                                                          | JSON
-                                                          v
+|  文档解析 + 降噪   +---->+  结构化提取     +---->+  7步后处理管道     |
+|  (PyMuPDF/docx)   |     |  (7种HR类型)   |     |  (标准化/定位/    |
++-------------------+     +----------------+     |   去重/评分)       |
+                                                  +--------+----------+
+                                                           | JSON
+                                                           v
 +-------------------+     +----------------+     +-------------------+
 |  match.py         | <-- |  query.py      | <-- |  import_resume.py |
 |  JD 智能匹配      |     |  搜索/统计/详情 |     |  导入人才数据库    |
@@ -245,7 +277,7 @@ python scripts/parse.py --input resume.pdf --output resume.md
 python scripts/pipeline.py \
   --input raw.json \
   --source resume.md \
-  --config assets/presets/resume.json \
+  --config presets/hr_full.json \
   --output result.json
 
 # Step 4: 导入数据库
@@ -259,15 +291,29 @@ python scripts/query.py list
 python scripts/match.py --jd jd.txt --top 10
 ```
 
+### 管道步骤 (7 步)
+
+```
+1. Time Normalization   -> 日期标准化为 YYYY.MM 格式 (支持7种格式变体)
+2. Source Grounding     -> 文本定位到简历原文位置 (char_start/end + 行号)
+3. Overlap Dedup        -> 智能去重: 不同类型或不同名称 = 不同实体，跳过去重
+4. Confidence Score     -> 4维质量评分
+5. Entity Resolution    -> 合并同名候选人 (HR默认开启)
+6. Relation Inference   -> 推断 人-公司-技能 关系 (HR默认开启)
+7. KG Injection         -> 知识图谱格式转换 (可选)
+```
+
 ### CLI 工具
 
 | 工具 | 说明 | 用法 |
 |------|------|------|
 | `parse.py` | PDF/DOCX 转 Markdown | `python scripts/parse.py --input resume.pdf` |
-| `pipeline.py` | 6 步后处理管道 | `python scripts/pipeline.py --input raw.json --source resume.md` |
+| `pipeline.py` | 7 步后处理管道 | `python scripts/pipeline.py --input raw.json --source resume.md` |
 | `import_resume.py` | 导入 SQLite 数据库 | `python scripts/import_resume.py --input result.json` |
 | `query.py` | 搜索/统计/详情/列表 | `python scripts/query.py search "Python"` |
 | `match.py` | JD 智能匹配 | `python scripts/match.py --jd jd.txt --top 10` |
+| `time_normalizer.py` | 时间格式标准化 | 集成在管道第1步 |
+| `filename_parser.py` | 简历文件名元数据提取 | 解析 `【岗位_城市 薪资K】姓名.pdf` 格式 |
 
 ### 数据库表结构 (8 张规范化表)
 
@@ -312,11 +358,11 @@ python scripts/match.py --jd jd.txt --top 10
 | 機能 | 説明 |
 |------|------|
 | 7種類の抽出タイプ | candidate, experience, education, skill, self_evaluation, job_intention, certification |
-| PDF/DOCX解析 | PyMuPDF (単段/2段組自動検出)、python-docx (見出し/太字/表の保持) |
-| 6ステップパイプライン | ソース位置特定 / 重複除去 / 信頼度スコアリング / エンティティ解決 / 関係推論 / KG変換 |
+| PDF/DOCX解析 | PyMuPDF (単段/2段組自動検出)、python-docx (見出し/太字/表の保持)、トラッキングノイズ除去 |
+| 7ステップパイプライン | 時刻正規化 / ソース位置特定 / スマート重複除去 / 信頼度スコアリング / エンティティ解決 / 関係推論 / KG変換 |
+| 8種スキルカテゴリ | 言語, フレームワーク, ツール, DB, 外国語, **アルゴリズム**, **ドメイン**, **方法論** + 経歴からの暗黙的スキル抽出 |
 | SQLite人材DB | 正規化テーブル8つ、多次元検索、グループ統計 |
 | JDスマートマッチング | JDテキストから要件を自動抽出、5次元加重スコアリング |
-| 6つのCLIツール | parse.py, pipeline.py, import_resume.py, query.py, match.py |
 | 外部API不要 | PyMuPDF + python-docxのみ |
 
 ### アーキテクチャ
@@ -327,8 +373,8 @@ python scripts/match.py --jd jd.txt --top 10
     v
 +-------------------+     +----------------+     +-------------------+
 |  parse.py         | MD  |  Claude AI     | JSON|  pipeline.py      |
-|  ドキュメント解析   +---->+  構造化抽出     +---->+  6ステップ        |
-|  (PyMuPDF/docx)   |     |  (7種HRタイプ)  |     |  パイプライン      |
+|  ドキュメント解析   +---->+  構造化抽出     +---->+  7ステップ        |
+|  + ノイズ除去      |     |  (7種HRタイプ)  |     |  パイプライン      |
 +-------------------+     +----------------+     +--------+----------+
                                                           | JSON
                                                           v
@@ -386,7 +432,7 @@ python scripts/parse.py --input resume.pdf --output resume.md
 python scripts/pipeline.py \
   --input raw.json \
   --source resume.md \
-  --config assets/presets/resume.json \
+  --config presets/hr_full.json \
   --output result.json
 
 # Step 4: データベースに取り込み
@@ -405,10 +451,12 @@ python scripts/match.py --jd jd.txt --top 10
 | ツール | 説明 | 使い方 |
 |--------|------|--------|
 | `parse.py` | PDF/DOCXをMarkdownに変換 | `python scripts/parse.py --input resume.pdf` |
-| `pipeline.py` | 6ステップ後処理 | `python scripts/pipeline.py --input raw.json --source resume.md` |
+| `pipeline.py` | 7ステップ後処理 | `python scripts/pipeline.py --input raw.json --source resume.md` |
 | `import_resume.py` | SQLiteに取り込み | `python scripts/import_resume.py --input result.json` |
 | `query.py` | 検索/統計/詳細/一覧 | `python scripts/query.py search "Python"` |
 | `match.py` | JDスマートマッチング | `python scripts/match.py --jd jd.txt --top 10` |
+| `time_normalizer.py` | 時刻フォーマット正規化 | パイプラインステップ1に統合 |
+| `filename_parser.py` | ファイル名メタデータ抽出 | `【職種_都市 給与K】氏名.pdf` を解析 |
 
 ### JDマッチングスコア次元
 
@@ -436,23 +484,25 @@ resumeX/
 +-- install.ps1                     # Cursor install script (Windows)
 +-- install.sh                      # Cursor install script (macOS/Linux)
 |
-+-- assets/presets/                  # Preset configurations
-|   +-- resume.json                #   HR resume extraction preset
++-- presets/                         # Preset configurations
+|   +-- hr_full.json               #   HR full pipeline preset (7 steps)
 |
 +-- references/                     # Detailed reference docs
-|   +-- extraction-types.md        #   7 HR extraction type definitions
-|   +-- few-shot-templates.md      #   Chinese resume Few-shot templates
+|   +-- extraction-types.md        #   7 HR extraction type definitions (8 skill categories)
+|   +-- few-shot-templates.md      #   Chinese resume Few-shot templates (incl. implicit skills)
 |   +-- output-schema.md           #   JSON Schema output format
 |   +-- post-processing.md         #   Pipeline algorithm details
 |
 +-- scripts/                        # Python pipeline & CLI tools
-|   +-- parse.py                   #   Document parser CLI (PDF/DOCX -> Markdown)
+|   +-- parse.py                   #   Document parser CLI (PDF/DOCX -> Markdown + noise cleaning)
 |   +-- parsers/                   #   Format parsers
 |   |   +-- pdf_parser.py          #     PDF (PyMuPDF, dual-column support)
 |   |   +-- docx_parser.py         #     DOCX (python-docx)
-|   +-- pipeline.py                #   Post-processing pipeline (6 steps)
+|   +-- pipeline.py                #   Post-processing pipeline (7 steps)
+|   +-- time_normalizer.py         #   Time format normalizer (v1.1: 7 format variants)
+|   +-- filename_parser.py         #   Filename metadata extractor (v1.1: bracket parsing)
 |   +-- source_grounding.py        #   Text alignment to source
-|   +-- overlap_dedup.py           #   Overlap deduplication
+|   +-- overlap_dedup.py           #   Smart dedup (v1.2: _is_distinct_entity)
 |   +-- confidence_scorer.py       #   4-dimension confidence scoring
 |   +-- entity_resolver.py         #   Entity resolution
 |   +-- relation_inferrer.py       #   Relation inference
@@ -476,6 +526,7 @@ resumeX/
 | PDF parsing: 10-page resume | < 2s |
 | DB query: 10,000 candidates | < 100ms |
 | JD matching: 10,000 candidates | < 1s |
+| Real resume test (6 resumes) | 64 extractions, 0 false dedup, avg confidence 0.747 |
 | External deps | PyMuPDF + python-docx only |
 | Python version | 3.10+ |
 

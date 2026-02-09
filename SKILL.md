@@ -5,7 +5,7 @@ description: "HR 简历结构化提取专家。Use when: 需要从简历 (PDF/DO
   适用于: 简历解析、人才数据库构建、候选人搜索、JD匹配、招聘数据分析。
   基于 Google LangExtract 算法层重构，针对 HR 场景深度优化。
   提供: (1) 7种HR提取类型分类框架 (2) 中文简历Few-shot模板库
-  (3) 6步后处理管道 (Source Grounding/去重/评分/消歧/关系推断/KG转换)
+  (3) 7步后处理管道 (时间标准化/Source Grounding/去重/评分/消歧/关系推断/KG转换)
   (4) PDF/DOCX文档解析器 (5) SQLite人才数据库+导入/查询/匹配CLI
   (6) JD-候选人智能匹配 (5维加权评分)。
   仅需 PyMuPDF + python-docx，无需外部 API。"
@@ -13,7 +13,7 @@ description: "HR 简历结构化提取专家。Use when: 需要从简历 (PDF/DO
 
 # Resume Extractor
 
-> 简历结构化提取 | 7 种 HR 类型 | PDF/DOCX 解析 | 6 步管道 | SQLite 人才库 | JD 匹配
+> 简历结构化提取 | 7 种 HR 类型 | PDF/DOCX 解析 | 7 步管道 | SQLite 人才库 | JD 匹配
 
 ## 核心禁令 (CRITICAL)
 
@@ -53,9 +53,9 @@ description: "HR 简历结构化提取专家。Use when: 需要从简历 (PDF/DO
 
 ## 工作流
 
-### Step 1: 文档解析
+### Step 1: 文档解析 + 噪音清理
 
-将 PDF/DOCX 简历解析为 Markdown 纯文本:
+将 PDF/DOCX 简历解析为 Markdown 纯文本，自动清理招聘平台水印/追踪码:
 
 ```bash
 # 单文件
@@ -65,14 +65,27 @@ python scripts/parse.py --input resume.pdf --output resume.md
 python scripts/parse.py --input-dir ./resumes/ --output-dir ./parsed/
 ```
 
+**v1.1**: 自动清理 BOSS直聘/猎聘等平台嵌入的 base64-like 追踪码行
+
 **支持的格式**:
 
 | 格式 | 解析器 | 依赖 | 特殊能力 |
 |------|--------|------|---------|
-| `.pdf` | PdfParser (PyMuPDF) | `pip install PyMuPDF` | 单栏/双栏自动检测 |
+| `.pdf` | PdfParser (PyMuPDF) | `pip install PyMuPDF` | 单栏/双栏自动检测 + 水印清理 |
 | `.docx` | DocxParser (python-docx) | `pip install python-docx` | 标题/粗体/表格保留 |
 | `.doc` | DocxParser (有限支持) | 同上 | 兼容模式 |
 | `.txt/.md` | 无需解析 | - | 直接使用 |
+
+### Step 1.5: 文件名元数据提取 (可选)
+
+招聘平台文件名通常包含岗位/城市/薪资等元数据，可提取为 context_hints:
+
+```bash
+python scripts/filename_parser.py "【高级Web后端开发工程师_成都 18-25K】唐双 6年.pdf"
+# 输出: {"position": "高级Web后端开发工程师", "city": "成都", "salary_min": 18000, ...}
+```
+
+**v1.1**: 生成的 context_hints 可在 Claude 提取时补充候选人城市等缺失信息
 
 ### Step 2: 选择预设
 
@@ -81,7 +94,7 @@ python scripts/parse.py --input-dir ./resumes/ --output-dir ./parsed/
 ```
 预设文件: assets/presets/resume.json
   - 重点: 全部 7 种 HR 类型
-  - 管道: 6 步全开 (含实体消歧+关系推断)
+  - 管道: 7 步全开 (含时间标准化+实体消歧+关系推断)
 ```
 
 ### Step 3: Claude 提取
@@ -132,12 +145,13 @@ python scripts/pipeline.py --input raw.json --source resume.md \
 **管道步骤** (详见 `references/post-processing.md`):
 
 ```
-1. Source Grounding  --> 精确定位 (char_start/end + line)
-2. Overlap Dedup     --> 去除重复提取
-3. Confidence Score  --> 4维度质量评分
-4. Entity Resolution --> 同名候选人合并 (HR默认开启)
-5. Relation Inference --> 人-公司-技能关系推断 (HR默认开启)
-6. KG Injection      --> 知识图谱格式转换 (可选)
+1. Time Normalization --> 时间格式标准化 (v1.1 新增)
+2. Source Grounding   --> 精确定位 (char_start/end + line)
+3. Overlap Dedup      --> 去除重复提取
+4. Confidence Score   --> 4维度质量评分
+5. Entity Resolution  --> 同名候选人合并 (HR默认开启)
+6. Relation Inference --> 人-公司-技能关系推断 (HR默认开启)
+7. KG Injection       --> 知识图谱格式转换 (可选)
 ```
 
 ### Step 5: 导入数据库
@@ -204,7 +218,7 @@ python scripts/match.py --jd-json requirements.json --top 10 --verbose
 
 | 预设 | 重点类型 | 默认后处理 |
 |------|---------|-----------|
-| `resume` | 全部 7 种 HR 类型 | 6 步全开 (含实体消歧+关系推断) |
+| `resume` | 全部 7 种 HR 类型 | 7 步全开 (含时间标准化+实体消歧+关系推断) |
 
 ## 核心原则
 
@@ -212,7 +226,9 @@ python scripts/match.py --jd-json requirements.json --top 10 --verbose
 2. **Pipeline 后处理** - 原始提取必须经过 Python 管道处理才算完成
 3. **text 必须来自原文** - 提取的 text 字段是简历原文精确片段，不是改写或翻译
 4. **技能单独提取** - 每个技能是独立记录，不合并到一条
-5. **时间格式统一** - period_start/period_end 统一为 YYYY.MM 格式
+5. **时间格式统一** - period_start/period_end 统一为 YYYY.MM 格式（仅年份补 .01，"至今" 保留原文）
+6. **隐式技能提取** - 不仅从"技能"栏提取，还要从工作经历/项目描述中识别算法、领域知识、方法论等隐式技能 (v1.1)
+7. **技能分类 8 类** - 语言/框架/工具/数据库/外语/算法/领域/方法论 + 软技能/证书相关/其他 (v1.1)
 
 ---
 

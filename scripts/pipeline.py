@@ -2,12 +2,13 @@
 Extraction Pipeline (HR Resume Version)
 
 简历提取后处理管道，串联所有后处理算法：
-1. Source Grounding - 文本对齐到源文件位置
-2. Overlap Deduplication - 重叠去重
-3. Confidence Scoring - 置信度评分
-4. Entity Resolution - 实体消歧 (默认开启: 合并同名候选人)
-5. Relation Inference - 关系推断 (默认开启: 人-公司-技能关系)
-6. Knowledge Graph Injection - KG 格式转换
+1. Time Normalization - 时间格式标准化 (v1.1 新增)
+2. Source Grounding - 文本对齐到源文件位置
+3. Overlap Deduplication - 重叠去重
+4. Confidence Scoring - 置信度评分
+5. Entity Resolution - 实体消歧 (默认开启: 合并同名候选人)
+6. Relation Inference - 关系推断 (默认开启: 人-公司-技能关系)
+7. Knowledge Graph Injection - KG 格式转换
 
 CLI 入口：
     python pipeline.py --input raw.json --source resume.txt --output result.json
@@ -25,6 +26,7 @@ from confidence_scorer import ConfidenceScorer
 from entity_resolver import EntityResolver
 from relation_inferrer import RelationInferrer
 from kg_injector import KGInjector
+from time_normalizer import TimeNormalizer
 
 
 class ExtractionPipeline:
@@ -32,6 +34,7 @@ class ExtractionPipeline:
 
     # 默认配置
     DEFAULT_CONFIG = {
+        "time_normalization": True,   # v1.1: 时间格式标准化
         "source_grounding": True,
         "overlap_dedup": True,
         "confidence_scoring": True,
@@ -57,6 +60,7 @@ class ExtractionPipeline:
         self.config = {**self.DEFAULT_CONFIG, **(config or {})}
 
         # 初始化各模块
+        self.time_normalizer = TimeNormalizer()
         self.grounder = SourceGrounder(source_text)
         self.deduplicator = OverlapDeduplicator(
             overlap_threshold=self.config["overlap_threshold"],
@@ -94,9 +98,17 @@ class ExtractionPipeline:
         print(f"\n=== Pipeline 开始 ===")
         print(f"原始提取项: {len(extractions)} 个\n")
 
-        # 1. Source Grounding
+        # 1. Time Normalization (v1.1)
+        if self.config["time_normalization"]:
+            print("[1/7] Time Normalization...")
+            extractions = self.time_normalizer.process(extractions)
+            print(f"  [OK] normalized time fields\n")
+        else:
+            print("[1/7] Time Normalization (skipped)\n")
+
+        # 2. Source Grounding
         if self.config["source_grounding"]:
-            print("[1/6] Source Grounding...")
+            print("[2/7] Source Grounding...")
             extractions = self.grounder.process(extractions)
             matched = sum(1 for e in extractions
                           if e.get('source_location', {}).get('match_type') in ['exact', 'normalized', 'fuzzy'])
@@ -108,48 +120,48 @@ class ExtractionPipeline:
                 if 'source_file' not in ext:
                     ext['source_file'] = self.source_file
 
-        # 2. Overlap Deduplication
+        # 3. Overlap Deduplication
         if self.config["overlap_dedup"]:
-            print("[2/6] Overlap Deduplication...")
+            print("[3/7] Overlap Deduplication...")
             before_count = len(extractions)
             extractions = self.deduplicator.process(extractions)
             removed = before_count - len(extractions)
             print(f"  [OK] removed {removed}, remaining {len(extractions)}\n")
 
-        # 3. Confidence Scoring
+        # 4. Confidence Scoring
         if self.config["confidence_scoring"]:
-            print("[3/6] Confidence Scoring...")
+            print("[4/7] Confidence Scoring...")
             extractions = self.scorer.process(extractions)
             avg_conf = sum(e.get('confidence', 0) for e in extractions) / len(extractions) if extractions else 0
             print(f"  [OK] avg confidence: {avg_conf:.3f}\n")
 
-        # 4. Entity Resolution
+        # 5. Entity Resolution
         if self.config["entity_resolution"]:
-            print("[4/6] Entity Resolution...")
+            print("[5/7] Entity Resolution...")
             before_entities = sum(1 for e in extractions if e.get('type') == 'entity')
             extractions = self.resolver.process(extractions)
             after_entities = sum(1 for e in extractions if e.get('type') == 'entity')
             merged = before_entities - after_entities
             print(f"  [OK] merged {merged} similar entities\n")
         else:
-            print("[4/6] Entity Resolution (skipped)\n")
+            print("[5/7] Entity Resolution (skipped)\n")
 
-        # 5. Relation Inference
+        # 6. Relation Inference
         if self.config["relation_inference"]:
-            print("[5/6] Relation Inference...")
+            print("[6/7] Relation Inference...")
             extractions, inferred_relations = self.inferrer.process(extractions)
             print(f"  [OK] inferred {len(inferred_relations)} relations\n")
         else:
-            print("[5/6] Relation Inference (skipped)\n")
+            print("[6/7] Relation Inference (skipped)\n")
 
-        # 6. KG Injection
+        # 7. KG Injection
         kg_format = None
         if self.config["kg_injection"]:
-            print("[6/6] Knowledge Graph Injection...")
+            print("[7/7] Knowledge Graph Injection...")
             kg_format = self.injector.convert(extractions, inferred_relations)
             print(f"  [OK] converted to KG format: {len(kg_format['entities'])} entities, {len(kg_format['relations'])} relations\n")
         else:
-            print("[6/6] Knowledge Graph Injection (跳过)\n")
+            print("[7/7] Knowledge Graph Injection (跳过)\n")
 
         # 统计
         stats = self._compute_stats(extractions, inferred_relations)

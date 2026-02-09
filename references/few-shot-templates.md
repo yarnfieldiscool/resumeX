@@ -352,6 +352,163 @@
 
 ---
 
+### skill 示例 (隐式技能 - 从工作经历推断)
+
+> **v1.1 新增**: 不仅从"技能"栏提取，还要从工作经历/项目描述中识别隐式技能
+
+**输入文本** (来自 experience 描述):
+```
+2025 年 图灵深视 | 算法工程师
+- 基于 YOLO v5 的目标检测模型训练与部署
+- 使用 GAN 进行数据增强，提升小样本场景下的检测精度
+- 搭建模型训练流水线，集成 MLflow 实验追踪
+```
+
+**提取输出** (从描述中推断的隐式技能):
+```json
+[
+  {
+    "id": "ext_020",
+    "type": "skill",
+    "text": "基于 YOLO v5 的目标检测模型训练与部署",
+    "summary_cn": "掌握 YOLO 目标检测算法",
+    "attributes": {
+      "name": "YOLO",
+      "category": "算法",
+      "level": "熟练"
+    },
+    "source_file": "简历.pdf"
+  },
+  {
+    "id": "ext_021",
+    "type": "skill",
+    "text": "使用 GAN 进行数据增强",
+    "summary_cn": "掌握 GAN 数据增强技术",
+    "attributes": {
+      "name": "GAN",
+      "category": "算法"
+    },
+    "source_file": "简历.pdf"
+  },
+  {
+    "id": "ext_022",
+    "type": "skill",
+    "text": "集成 MLflow 实验追踪",
+    "summary_cn": "掌握 MLflow 实验管理工具",
+    "attributes": {
+      "name": "MLflow",
+      "category": "工具"
+    },
+    "source_file": "简历.pdf"
+  }
+]
+```
+
+**提取原则**: 从经历描述中识别技术关键词时，`text` 字段是包含该技能的**原文片段**（不是技能名本身）。`name` 是提炼后的技能名。
+
+---
+
+### skill 示例 (领域知识 + 方法论)
+
+**输入文本** (来自 experience 描述):
+```
+2023.03 - 2025.02  北京华亿创新  软件开发工程师
+- 负责医疗信息化平台的后端架构设计
+- 主导 CI/CD 流水线搭建，实现自动化部署
+- 使用 Scrum 敏捷开发模式管理迭代
+```
+
+**提取输出**:
+```json
+[
+  {
+    "id": "ext_030",
+    "type": "skill",
+    "text": "负责医疗信息化平台的后端架构设计",
+    "summary_cn": "具备医疗信息化领域经验",
+    "attributes": {
+      "name": "医疗信息化",
+      "category": "领域"
+    },
+    "source_file": "简历.pdf"
+  },
+  {
+    "id": "ext_031",
+    "type": "skill",
+    "text": "主导 CI/CD 流水线搭建，实现自动化部署",
+    "summary_cn": "掌握 CI/CD 持续集成/交付",
+    "attributes": {
+      "name": "CI/CD",
+      "category": "方法论"
+    },
+    "source_file": "简历.pdf"
+  },
+  {
+    "id": "ext_032",
+    "type": "skill",
+    "text": "使用 Scrum 敏捷开发模式管理迭代",
+    "summary_cn": "掌握 Scrum 敏捷开发方法",
+    "attributes": {
+      "name": "Scrum",
+      "category": "方法论"
+    },
+    "source_file": "简历.pdf"
+  }
+]
+```
+
+---
+
+### 模糊时间格式处理示例
+
+> **v1.1 新增**: 简历中常见的非标准时间格式及其标准化输出
+
+| 原文时间 | 标准化输出 | 规则 |
+|----------|-----------|------|
+| `2025 年` | `"period_start": "2025.01"` | 仅年份 → 补 .01 |
+| `至今` | `"period_end": "至今"` | 保留原文 |
+| `2020.9` | `"period_start": "2020.09"` | 单位月份 → 补零 |
+| `Jul 2020` | `"period_start": "2020.07"` | 英文月份 → 数字 |
+| `2019年7月` | `"period_start": "2019.07"` | 中文月份 → 数字 |
+
+**输入文本**:
+```
+2025 年 图灵深视 | 算法工程师
+2021 年 无锡森标科技 | 调试工程师
+```
+
+**提取输出**:
+```json
+[
+  {
+    "id": "ext_040",
+    "type": "experience",
+    "text": "2025 年 图灵深视 | 算法工程师",
+    "summary_cn": "在图灵深视担任算法工程师",
+    "attributes": {
+      "company": "图灵深视",
+      "title": "算法工程师",
+      "period_start": "2025.01"
+    },
+    "source_file": "简历.pdf"
+  },
+  {
+    "id": "ext_041",
+    "type": "experience",
+    "text": "2021 年 无锡森标科技 | 调试工程师",
+    "summary_cn": "在无锡森标科技担任调试工程师",
+    "attributes": {
+      "company": "无锡森标科技",
+      "title": "调试工程师",
+      "period_start": "2021.01"
+    },
+    "source_file": "简历.pdf"
+  }
+]
+```
+
+---
+
 ## 特殊格式简历示例
 
 ### 英文简历片段
@@ -449,6 +606,7 @@ Senior Backend Engineer | ABC Tech Co., Ltd | Jul 2020 - Present
 3. **attributes 遵循类型定义** - 参见 `extraction-types.md` 中的必填/可选属性
 4. **一段文本可产生多个提取** - 如表格式简历的个人信息区域同时包含 candidate + education
 5. **ID 按顺序递增** - `ext_001`, `ext_002`, ...
-6. **时间格式标准化** - 无论原文格式如何 (2020年7月、Jul 2020、2020/07)，`period_start`/`period_end` 统一为 `YYYY.MM` 格式
+6. **时间格式标准化** - 无论原文格式如何 (2020年7月、Jul 2020、2020/07、2025 年)，`period_start`/`period_end` 统一为 `YYYY.MM` 格式。仅年份时补 `.01`，"至今" 保留原文
 7. **薪资数值化** - `25K` -> `salary_min: 25000`，`30万/年` -> 按月换算或保留年薪并标注 `salary_unit`
 8. **技能拆分** - 每个独立技能单独提取为一条 skill 记录，不合并
+9. **隐式技能提取** - 不仅从"技能"栏提取，还要从工作经历/项目描述中识别算法、领域知识、方法论等隐式技能。`text` 为包含该技能的原文片段，`name` 为提炼的技能名
